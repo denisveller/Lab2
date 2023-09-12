@@ -26,15 +26,7 @@ import time
 
 import BNO055
 
-
-# Create and configure the BNO sensor connection.  Make sure only ONE of the
-# below 'bno = ...' lines is uncommented:
-# Raspberry Pi configuration with serial UART and RST connected to GPIO 18:
-bno = BNO055.BNO055(serial_port='/dev/serial0', rst=18)
-# BeagleBone Black configuration with default I2C connection (SCL=P9_19, SDA=P9_20),
-# and RST connected to pin P9_12:
-#bno = BNO055.BNO055(rst='P9_12')
-
+bno = BNO055.BNO055()
 
 # Enable verbose debug logging if -v is passed as a parameter.
 if len(sys.argv) == 2 and sys.argv[1].lower() == '-v':
@@ -48,6 +40,7 @@ if not bno.begin():
 status, self_test, error = bno.get_system_status()
 print('System status: {0}'.format(status))
 print('Self test result (0x0F is normal): 0x{0:02X}'.format(self_test))
+
 # Print out an error if system status is in error mode.
 if status == 0x01:
     print('System error: {0}'.format(error))
@@ -62,6 +55,8 @@ print('Magnetometer ID:    0x{0:02X}'.format(mag))
 print('Gyroscope ID:       0x{0:02X}\n'.format(gyro))
 
 print('Reading BNO055 data, press Ctrl-C to quit...')
+
+
 while True:
     # Read the Euler angles for heading, roll, pitch (all in degrees).
     heading, roll, pitch = bno.read_euler()
@@ -70,6 +65,7 @@ while True:
     # Print everything out.
     print('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}\tSys_cal={3} Gyro_cal={4} Accel_cal={5} Mag_cal={6}'.format(
           heading, roll, pitch, sys, gyro, accel, mag))
+    
     # Other values you can optionally read:
     # Orientation as a quaternion:
     #x,y,z,w = bno.read_quaterion()

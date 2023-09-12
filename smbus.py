@@ -123,7 +123,7 @@ class SMBus:
         # or else Python 3 fails (see: https://bugs.python.org/issue20074)
         # pylint: disable=consider-using-with
         temp = "/dev/i2c-" + str(bus)
-        self._device = io.open(file=f"/dev/i2c-{bus}", mode="r+b", buffering=0)
+        self._device = io.open(file=temp, mode="r+b", buffering=0)
         # pylint: enable=consider-using-with
         # TODO: Catch IOError and throw a better error message that describes
         # what's wrong (i.e. I2C may not be enabled or the bus doesn't exist).
@@ -230,10 +230,10 @@ class SMBus:
         cmdstring = create_string_buffer(len(cmd))
         for i, val in enumerate(cmd):
             #Bug here
-            print(val)
+            print(cmd)
             print(enumerate(cmd))
             #remove dianostic prints
-            cmdstring[i] = val
+            cmdstring[i] = str(val)
 
         result = create_string_buffer(length)
 
