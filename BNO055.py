@@ -360,6 +360,25 @@ class BNO055(object):
         # too).
         time.sleep(0.03)
 
+    def get_revision(self):
+        """Return a tuple with revision information about the BNO055 chip.  Will
+        return 5 values:
+          - Software revision
+          - Bootloader version
+          - Accelerometer ID
+          - Magnetometer ID
+          - Gyro ID
+        """
+        # Read revision values.
+        accel = self._read_byte(BNO055_ACCEL_REV_ID_ADDR)
+        mag = self._read_byte(BNO055_MAG_REV_ID_ADDR)
+        gyro = self._read_byte(BNO055_GYRO_REV_ID_ADDR)
+        bl = self._read_byte(BNO055_BL_REV_ID_ADDR)
+        sw_lsb = self._read_byte(BNO055_SW_REV_ID_LSB_ADDR)
+        sw_msb = self._read_byte(BNO055_SW_REV_ID_MSB_ADDR)
+        sw = ((sw_msb << 8) | sw_lsb) & 0xFFFF
+        # Return the results as a tuple of all 5 values.
+        return (sw, bl, accel, mag, gyro)
     
     def get_system_status(self, run_self_test=True):
         """Return a tuple with status information.  Three values will be returned:
