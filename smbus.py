@@ -229,11 +229,8 @@ class SMBus:
 
         cmdstring = create_string_buffer(len(cmd))
         for i, val in enumerate(cmd):
-            #Bug here
-            print(cmd)
-            print(enumerate(cmd))
-            #remove dianostic prints
-            cmdstring[i] = str(val)
+ 
+            cmdstring[i] = chr(val)
 
         result = create_string_buffer(length)
 

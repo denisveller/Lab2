@@ -547,3 +547,4 @@ class BNO055(object):
     def read_temp(self):
         """Return the current temperature in Celsius."""
         return self._read_signed_byte(BNO055_TEMP_ADDR)
+
