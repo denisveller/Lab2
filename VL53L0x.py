@@ -160,18 +160,18 @@ class VL53L0X:
         #   https://github.com/pololu/vl53l0x-arduino/blob/master/VL53L0X.cpp
         # Set I2C standard mode.
         for pair in ((0x88, 0x00), (0x80, 0x01), (0xFF, 0x01), (0x00, 0x00)):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
         self._stop_variable = self._read_u8(0x91)
         for pair in ((0x00, 0x01), (0xFF, 0x00), (0x80, 0x00)):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
         # disable SIGNAL_RATE_MSRC (bit 1) and SIGNAL_RATE_PRE_RANGE (bit 4)
         # limit checks
         config_control = self._read_u8(_MSRC_CONFIG_CONTROL) | 0x12
-        self._write_u8(_MSRC_CONFIG_CONTROL, config_control)
+        self.write8(_MSRC_CONFIG_CONTROL, config_control)
         # set final range signal rate limit to 0.25 MCPS (million counts per
         # second)
         self.signal_rate_limit = 0.25
-        self._write_u8(_SYSTEM_SEQUENCE_CONFIG, 0xFF)
+        self.write8(_SYSTEM_SEQUENCE_CONFIG, 0xFF)
         spad_count, spad_is_aperture = self._get_spad_info()
         # The SPAD map (RefGoodSpadMap) is read by
         # VL53L0X_get_info_from_device() in the API, but the same data seems to
@@ -190,7 +190,7 @@ class VL53L0X:
             (0xFF, 0x00),
             (_GLOBAL_CONFIG_REF_EN_START_SELECT, 0xB4),
         ):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
 
         first_spad_to_enable = 12 if spad_is_aperture else 0
         spads_enabled = 0
@@ -286,23 +286,23 @@ class VL53L0X:
             (0xFF, 0x00),
             (0x80, 0x00),
         ):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
 
-        self._write_u8(_SYSTEM_INTERRUPT_CONFIG_GPIO, 0x04)
+        self.write8(_SYSTEM_INTERRUPT_CONFIG_GPIO, 0x04)
         gpio_hv_mux_active_high = self._read_u8(_GPIO_HV_MUX_ACTIVE_HIGH)
-        self._write_u8(
+        self.write8(
             _GPIO_HV_MUX_ACTIVE_HIGH, gpio_hv_mux_active_high & ~0x10
         )  # active low
-        self._write_u8(_SYSTEM_INTERRUPT_CLEAR, 0x01)
+        self.write8(_SYSTEM_INTERRUPT_CLEAR, 0x01)
         self._measurement_timing_budget_us = self.measurement_timing_budget
-        self._write_u8(_SYSTEM_SEQUENCE_CONFIG, 0xE8)
+        self.write8(_SYSTEM_SEQUENCE_CONFIG, 0xE8)
         self.measurement_timing_budget = self._measurement_timing_budget_us
-        self._write_u8(_SYSTEM_SEQUENCE_CONFIG, 0x01)
+        self.write8(_SYSTEM_SEQUENCE_CONFIG, 0x01)
         self._perform_single_ref_calibration(0x40)
-        self._write_u8(_SYSTEM_SEQUENCE_CONFIG, 0x02)
+        self.write8(_SYSTEM_SEQUENCE_CONFIG, 0x02)
         self._perform_single_ref_calibration(0x00)
         # "restore the previous Sequence Config"
-        self._write_u8(_SYSTEM_SEQUENCE_CONFIG, 0xE8)
+        self.write8(_SYSTEM_SEQUENCE_CONFIG, 0xE8)
 
     def _read_u8(self, address: int) -> int:
         # Read an 8-bit unsigned value from the specified 8-bit address.
@@ -320,14 +320,14 @@ class VL53L0X:
             self._device.readinto(self._BUFFER)
         return (self._BUFFER[0] << 8) | self._BUFFER[1]
 
-    def _write_u8(self, address: int, val: int) -> None:
+    def write8(self, address: int, val: int) -> None:
         # Write an 8-bit unsigned value to the specified 8-bit address.
         with self._device:
             self._BUFFER[0] = address & 0xFF
             self._BUFFER[1] = val & 0xFF
             self._device.write(self._BUFFER, end=2)
 
-    def _write_u16(self, address: int, val: int) -> None:
+    def write16(self, address: int, val: int) -> None:
         # Write a 16-bit BE unsigned value to the specified 8-bit address.
         with self._device:
             self._BUFFER[0] = address & 0xFF
@@ -340,8 +340,8 @@ class VL53L0X:
         # count and boolean is_aperture.  Based on code from:
         #   https://github.com/pololu/vl53l0x-arduino/blob/master/VL53L0X.cpp
         for pair in ((0x80, 0x01), (0xFF, 0x01), (0x00, 0x00), (0xFF, 0x06)):
-            self._write_u8(pair[0], pair[1])
-        self._write_u8(0x83, self._read_u8(0x83) | 0x04)
+            self.write8(pair[0], pair[1])
+        self.write8(0x83, self._read_u8(0x83) | 0x04)
         for pair in (
             (0xFF, 0x07),
             (0x81, 0x01),
@@ -349,7 +349,7 @@ class VL53L0X:
             (0x94, 0x6B),
             (0x83, 0x00),
         ):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
         start = time.monotonic()
         while self._read_u8(0x83) == 0x00:
             if (
@@ -357,20 +357,20 @@ class VL53L0X:
                 and (time.monotonic() - start) >= self.io_timeout_s
             ):
                 raise RuntimeError("Timeout waiting for VL53L0X!")
-        self._write_u8(0x83, 0x01)
+        self.write8(0x83, 0x01)
         tmp = self._read_u8(0x92)
         count = tmp & 0x7F
         is_aperture = ((tmp >> 7) & 0x01) == 1
         for pair in ((0x81, 0x00), (0xFF, 0x06)):
-            self._write_u8(pair[0], pair[1])
-        self._write_u8(0x83, self._read_u8(0x83) & ~0x04)
+            self.write8(pair[0], pair[1])
+        self.write8(0x83, self._read_u8(0x83) & ~0x04)
         for pair in ((0xFF, 0x01), (0x00, 0x01), (0xFF, 0x00), (0x80, 0x00)):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
         return (count, is_aperture)
 
     def _perform_single_ref_calibration(self, vhv_init_byte: int) -> None:
         # based on VL53L0X_perform_single_ref_calibration() from ST API.
-        self._write_u8(_SYSRANGE_START, 0x01 | vhv_init_byte & 0xFF)
+        self.write8(_SYSRANGE_START, 0x01 | vhv_init_byte & 0xFF)
         start = time.monotonic()
         while (self._read_u8(_RESULT_INTERRUPT_STATUS) & 0x07) == 0:
             if (
@@ -378,8 +378,8 @@ class VL53L0X:
                 and (time.monotonic() - start) >= self.io_timeout_s
             ):
                 raise RuntimeError("Timeout waiting for VL53L0X!")
-        self._write_u8(_SYSTEM_INTERRUPT_CLEAR, 0x01)
-        self._write_u8(_SYSRANGE_START, 0x00)
+        self.write8(_SYSTEM_INTERRUPT_CLEAR, 0x01)
+        self.write8(_SYSRANGE_START, 0x00)
 
     def _get_vcsel_pulse_period(self, vcsel_period_type: int) -> int:
         # pylint: disable=no-else-return
@@ -452,7 +452,7 @@ class VL53L0X:
         assert 0.0 <= val <= 511.99
         # Convert to 16-bit 9.7 fixed point value from a float.
         val = int(val * (1 << 7))
-        self._write_u16(_FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, val)
+        self.write16(_FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, val)
 
     @property
     def measurement_timing_budget(self) -> int:
@@ -506,7 +506,7 @@ class VL53L0X:
             )
             if pre_range:
                 final_range_timeout_mclks += pre_range_mclks
-            self._write_u16(
+            self.write16(
                 _FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI,
                 _encode_timeout(final_range_timeout_mclks),
             )
@@ -556,7 +556,7 @@ class VL53L0X:
             (0x80, 0x00),
             (_SYSRANGE_START, 0x01),
         ):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
         start = time.monotonic()
         while (self._read_u8(_SYSRANGE_START) & 0x01) > 0:
             if (
@@ -583,7 +583,7 @@ class VL53L0X:
         # assumptions: Linearity Corrective Gain is 1000 (default)
         # fractional ranging is not enabled
         range_mm = self._read_u16(_RESULT_RANGE_STATUS + 10)
-        self._write_u8(_SYSTEM_INTERRUPT_CLEAR, 0x01)
+        self.write8(_SYSTEM_INTERRUPT_CLEAR, 0x01)
         self._data_ready = False
         return range_mm
 
@@ -626,7 +626,7 @@ class VL53L0X:
             (0x80, 0x00),
             (_SYSRANGE_START, 0x02),
         ):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
         start = time.monotonic()
         while (self._read_u8(_SYSRANGE_START) & 0x01) > 0:
             if (
@@ -648,13 +648,14 @@ class VL53L0X:
             (0x00, 0x01),
             (0xFF, 0x00),
         ):
-            self._write_u8(pair[0], pair[1])
+            self.write8(pair[0], pair[1])
         self._continuous_mode = False
 
         # restore the sensor to single ranging mode
         self.do_range_measurement()
 
     def set_address(self, new_address: int) -> None:
+        ## commented out because I do not feel like fixing
         """Set a new I2C address to the instantaited object. This is only called when using
         multiple VL53L0X sensors on the same I2C bus (SDA & SCL pins). See also the
         `example <examples.html#multiple-vl53l0x-on-same-i2c-bus>`_ for proper usage.
@@ -668,5 +669,5 @@ class VL53L0X:
             on the same I2C bus are in their off state by pulling the "SHDN" pins LOW. When the
             "SHDN" pin is pulled HIGH again the default I2C address is ``0x29``.
         """
-        self._write_u8(_I2C_SLAVE_DEVICE_ADDRESS, new_address & 0x7F)
-        self._device = i2c_device.I2CDevice(self._i2c, new_address)
+        #self.write8(_I2C_SLAVE_DEVICE_ADDRESS, new_address & 0x7F)
+        #self._device = i2c_device.I2CDevice(self._i2c, new_address)
